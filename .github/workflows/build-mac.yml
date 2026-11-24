@@ -1,0 +1,75 @@
+name: Build MacBook Launcher (.dmg)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build-mac:
+    runs-on: macos-13
+
+    steps:
+      - name: Lay ma nguon tu repo
+        uses: actions/checkout@v4
+
+      - name: Cai Node.js 16
+        uses: actions/setup-node@v4
+        with:
+          node-version: 16
+
+      - name: Tu dong tai & tach PepperFlashPlayer.plugin 32.0.0.371 (macOS)
+        run: |
+          if [ ! -e "plugins/PepperFlashPlayer.plugin" ]; then
+            mkdir -p plugins /tmp/fp_work
+            echo "Dang tai Adobe Flash Player 32.0.0.371 archive..."
+            curl -L --retry 3 -o /tmp/fp_work/fp.zip "https://archive.org/download/flashplayerarchive/pub/flashplayer/installers/archive/fp_32.0.0.371_archive.zip"
+
+            echo "Dang giai nen flashplayer32_0r0_371_macpep.dmg..."
+            unzip -j /tmp/fp_work/fp.zip "*macpep.dmg" -d /tmp/fp_work/
+            DMG_FILE=$(find /tmp/fp_work -name "*macpep.dmg" | head -n 1)
+            if [ -z "$DMG_FILE" ]; then
+              echo "LOI: Khong tim thay file macpep.dmg trong archive!"
+              exit 1
+            fi
+
+            echo "Dang mount DMG..."
+            hdiutil attach "$DMG_FILE" -nobrowse -readonly -mountpoint /tmp/fp_mnt
+
+            PKG_FILE=$(find /tmp/fp_mnt -name "*.pkg" | head -n 1)
+            if [ -z "$PKG_FILE" ]; then
+              echo "LOI: Khong tim thay file .pkg ben trong DMG!"
+              hdiutil detach /tmp/fp_mnt -force || true
+              exit 1
+            fi
+
+            echo "Dang bung PKG: $PKG_FILE"
+            pkgutil --expand-full "$PKG_FILE" /tmp/fp_work/expanded
+
+            PLUGIN_PATH=$(find /tmp/fp_work/expanded -name "PepperFlashPlayer.plugin" -maxdepth 6 | head -n 1)
+            if [ -z "$PLUGIN_PATH" ]; then
+              echo "LOI: Khong tim thay PepperFlashPlayer.plugin!"
+              hdiutil detach /tmp/fp_mnt -force || true
+              exit 1
+            fi
+
+            cp -R "$PLUGIN_PATH" plugins/PepperFlashPlayer.plugin
+            hdiutil detach /tmp/fp_mnt -force || true
+            rm -rf /tmp/fp_work
+            echo "Da tach thanh cong plugins/PepperFlashPlayer.plugin!"
+          fi
+          ls -la plugins/PepperFlashPlayer.plugin
+
+      - name: Cai dat thu vien Electron
+        run: npm install
+
+      - name: Build file .dmg cho macOS (x64 - chay duoc ca Intel va M1/M2/M3/M4)
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: npm run build-mac
+
+      - name: Xuat file .dmg thanh pham
+        uses: actions/upload-artifact@v4
+        with:
+          name: DaiChienRong-Mac-DMG
+          path: dist/*.dmg
