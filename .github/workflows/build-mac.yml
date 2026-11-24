@@ -82,7 +82,13 @@ jobs:
       - name: Build file .dmg cho macOS (x64 - chay duoc ca Intel va M1/M2/M3/M4)
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
-        run: npm run build-mac
+        run: |
+          npx electron-builder --mac dir --x64
+          mkdir -p /tmp/dmg_stage
+          cp -R "dist/mac/DaiChienRong.app" /tmp/dmg_stage/
+          ln -s /Applications /tmp/dmg_stage/Applications
+          hdiutil create -volname "DaiChienRong" -srcfolder /tmp/dmg_stage -ov -format UDZO "dist/DaiChienRong-1.0.0.dmg"
+          ls -lh dist/*.dmg
 
       - name: Xuat file .dmg thanh pham
         uses: actions/upload-artifact@v4
