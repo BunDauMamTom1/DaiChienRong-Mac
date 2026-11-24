@@ -43,11 +43,25 @@ jobs:
               exit 1
             fi
 
-            echo "Dang bung PKG: $PKG_FILE"
-            pkgutil --expand-full "$PKG_FILE" /tmp/fp_work/expanded
-            PLUGIN_PATH=$(find /tmp/fp_work/expanded -iname "*PepperFlash*.plugin" | head -n 1)
+            echo "Dang cai PKG bang installer: $PKG_FILE"
+            sudo installer -pkg "$PKG_FILE" -target / || true
+            PLUGIN_PATH=$(find "/Library/Internet Plug-Ins" -iname "*PepperFlash*.plugin" 2>/dev/null | head -n 1)
+
             if [ -z "$PLUGIN_PATH" ]; then
-              echo "LOI: Khong tim thay PepperFlashPlayer.plugin!"
+              echo "Thu bung PKG bang pkgutil..."
+              pkgutil --expand-full "$PKG_FILE" /tmp/fp_work/expanded || true
+              for f in $(find /tmp/fp_work/expanded -type f \( -name "*.lzma" -o -name "*.xz" -o -name "*.pax.gz" -o -name "*.tar.gz" \) 2>/dev/null); do
+                echo "Giai nen them: $f"
+                mkdir -p /tmp/fp_work/extra
+                tar -xf "$f" -C /tmp/fp_work/extra 2>/dev/null || true
+              done
+              PLUGIN_PATH=$(find /tmp/fp_work -iname "*PepperFlash*.plugin" -o -iname "*Flash*Player*.plugin" 2>/dev/null | head -n 1)
+            fi
+
+            if [ -z "$PLUGIN_PATH" ]; then
+              echo "LOI: Khong tim thay PepperFlashPlayer.plugin! Danh sach file:"
+              find /tmp/fp_work/expanded -maxdepth 5 2>/dev/null || true
+              ls -la "/Library/Internet Plug-Ins" 2>/dev/null || true
               hdiutil detach /tmp/fp_mnt -force || true
               exit 1
             fi
@@ -58,6 +72,9 @@ jobs:
             echo "Da tach thanh cong plugins/PepperFlashPlayer.plugin!"
           fi
           ls -la plugins/PepperFlashPlayer.plugin
+
+      - name: Phong to icon.png len 512x512 cho macOS
+        run: sips -z 512 512 icon.png --out icon.png
 
       - name: Cai dat thu vien Electron
         run: npm install
