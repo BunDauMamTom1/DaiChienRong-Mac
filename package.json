@@ -1,0 +1,29 @@
+{
+  "name": "daichienrong-launcher-mac",
+  "version": "1.0.0",
+  "description": "Launcher macOS cho Dai Chien Rong",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build-mac": "electron-builder --mac dmg --x64"
+  },
+  "devDependencies": {
+    "electron": "11.5.0",
+    "electron-builder": "^22.14.13"
+  },
+  "build": {
+    "appId": "com.daichienrong.launcher",
+    "productName": "DaiChienRong",
+    "mac": {
+      "category": "public.app-category.games",
+      "icon": "icon.png",
+      "target": ["dmg"]
+    },
+    "extraResources": [
+      {
+        "from": "plugins/PepperFlashPlayer.plugin",
+        "to": "PepperFlashPlayer.plugin"
+      }
+    ]
+  }
+}
