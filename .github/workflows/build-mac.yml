@@ -45,8 +45,7 @@ jobs:
 
             echo "Dang bung PKG: $PKG_FILE"
             pkgutil --expand-full "$PKG_FILE" /tmp/fp_work/expanded
-
-            PLUGIN_PATH=$(find /tmp/fp_work/expanded -name "PepperFlashPlayer.plugin" -maxdepth 6 | head -n 1)
+            PLUGIN_PATH=$(find /tmp/fp_work/expanded -iname "*PepperFlash*.plugin" | head -n 1)
             if [ -z "$PLUGIN_PATH" ]; then
               echo "LOI: Khong tim thay PepperFlashPlayer.plugin!"
               hdiutil detach /tmp/fp_mnt -force || true
